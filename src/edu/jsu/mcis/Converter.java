@@ -59,7 +59,7 @@ public class Converter {
     @SuppressWarnings("unchecked")
     public static String csvToJson(String csvString) {
         
-        String results = "";
+        String results = " ";
         
         try {
             
@@ -68,6 +68,30 @@ public class Converter {
             Iterator<String[]> iterator = full.iterator();
             
             // INSERT YOUR CODE HERE
+            JSONObject JSONObject = new JSONObject();
+            JSONArray rowHeads = new JSONArray();
+            JSONArray mainData = new JSONArray();
+            JSONArray colHeads = new JSONArray();
+            
+            //grabbing colHeads from CSV data for conversion
+            for (String string: iterator.next()){
+                colHeads.add(string);
+            }
+            //gathering the rest of the data as string type arrays add first 
+            //element as (ID) to rowHeads.
+            while(iterator.hasNext()){
+                JSONArray rowData = new JSONArray();
+                String[] rows = iterator.next();
+                rowHeads.add(rows[0]);
+                for(int a=0; a<rows.length; a++){
+                    rowData.add(Integer.parseInt(rows[a]));
+                }
+                mainData.add(rowData);
+            }
+            JSONObject.put("colHeaders", colHeads);
+            JSONObject.put("rowHeaders", rowHeads);
+            JSONObject.put("data", mainData);
+            results = JSONValue.toJSONString(JSONObject);
             
         }        
         catch(Exception e) { return e.toString(); }
@@ -81,18 +105,72 @@ public class Converter {
         String results = "";
         
         try {
+            //System.err.println("testing");
 
             StringWriter writer = new StringWriter();
             CSVWriter csvWriter = new CSVWriter(writer, ',', '"', '\n');
             
             // INSERT YOUR CODE HERE
+            //JSON Parsing
+            JSONParser Parser = new JSONParser();
+            JSONObject JObject = (JSONObject)Parser.parse(jsonString);
+            //System.err.println("testing");
+            //getting data from JsonObject
             
+            JSONArray colHeads=(JSONArray)JObject.get("colHeaders");
+            JSONArray rowHeads = (JSONArray)JObject.get("rowHeaders");
+            JSONArray data= (JSONArray)JObject.get("data");
+            //System.err.println("testing");
+            //Generating Empty CSV containers as String Arrays
+            
+            String[] colStringArray = new String[colHeads.size()];
+            String[] rowStringArray = new String[rowHeads.size()];
+            String[] dataStringArray = new String[data.size()];
+            
+            // gathering colheads and copying them to colString array
+            
+            for(int i=0; i<colHeads.size(); i++){
+                colStringArray[i] = colHeads.get(i).toString();
+                
+            }
+            csvWriter.writeNext(colStringArray);
+            
+            //getting row heads and row data
+            // currently stored in separate arrays.  soon to be combined
+            for(int i=0; i<rowHeads.size(); i++){
+                rowStringArray[i] = rowHeads.get(i).toString();
+                
+                // data array
+                
+                dataStringArray[i] = data.get(i).toString();
+                
+            }
+                for(int i=0; i<dataStringArray.length; i++){
+                    JSONArray dataValues = (JSONArray)Parser.parse(dataStringArray[i]);
+                    String[] row = new String[dataValues.size()+1];
+                    
+                    row[0] = rowStringArray[i];
+                    for (int j=0;j<dataValues.size();j++){
+                        row[j+1] = dataValues.get(j).toString();
+                    }
+                    csvWriter.writeNext(row);
+                }
+                results = writer.toString();
         }
         
-        catch(Exception e) { return e.toString(); }
+        catch(Exception e) {
+            
+            
+            e.printStackTrace();
+            
+            return "";
+        
+        }
         
         return results.trim();
         
     }
+
+
 
 }
